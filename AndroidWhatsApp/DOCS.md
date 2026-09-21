@@ -1,22 +1,26 @@
-# AndroidWhatsApp 0.2.0
+# AndroidWhatsApp 0.2.2
 
-This version runs the official Google Android Emulator instead of ReDroid.
+AndroidWhatsApp runs an Android 14 Google Emulator with persistent storage and browser control.
 
-## First start
+## Home Assistant Ingress
 
-The first build is large because it downloads the Android Emulator and Android 14 x86_64 system image. The first Android boot can also take several minutes, particularly if `/dev/kvm` is not available.
+Use **Open Web UI** or the **AndroidWhatsApp** Home Assistant sidebar entry.
 
-After startup, open **Web UI** to see the Android screen through noVNC.
+The noVNC frontend is served through Home Assistant Ingress on the app's internal port 6080. AndroidWhatsApp automatically derives the current Ingress session prefix and uses it for the noVNC `websockify` WebSocket connection.
+
+This means you do not need to know or bookmark the generated `/api/hassio_ingress/.../` URL.
+
+For troubleshooting only, direct noVNC remains available on port 6080 and raw VNC on port 5900.
 
 ## Install WhatsApp
 
-Put a legitimate single-file `WhatsApp.apk` in the AndroidWhatsApp app configuration directory:
+Put a legitimate single-file `WhatsApp.apk` in:
 
 ```
 /addon_configs/98905704_android_whatsapp/WhatsApp.apk
 ```
 
-Restart AndroidWhatsApp. The startup script installs it after Android finishes booting.
+Restart AndroidWhatsApp. The startup script installs it after Android completes boot.
 
 ## Logs
 
@@ -24,4 +28,4 @@ Restart AndroidWhatsApp. The startup script installs it after Android finishes b
 ha apps logs 98905704_android_whatsapp --follow
 ```
 
-Look for the KVM line first. Hardware acceleration is strongly preferred but software emulation is supported as a fallback.
+Hardware acceleration is strongly preferred. If KVM is unavailable, AndroidWhatsApp automatically uses software emulation.
