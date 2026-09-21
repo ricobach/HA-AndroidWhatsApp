@@ -37,7 +37,7 @@ cleanup() {
 trap cleanup EXIT TERM INT
 
 echo "============================================================"
-echo " AndroidWhatsApp 0.2.0 - Android Emulator"
+echo " AndroidWhatsApp 0.2.1 - Android Emulator"
 echo "============================================================"
 log "Kernel: $(uname -a)"
 log "Architecture: $(uname -m)"
@@ -74,7 +74,6 @@ x11vnc \
     -forever \
     -shared \
     -nopw \
-    -localhost \
     -rfbport 5900 \
     >/tmp/x11vnc.log 2>&1 &
 VNC_PID=$!
@@ -82,7 +81,7 @@ VNC_PID=$!
 websockify --web=/usr/share/novnc 6080 localhost:5900 &
 NOVNC_PID=$!
 
-log "noVNC is listening on port 6080."
+log "VNC is listening on port 5900 and noVNC on port 6080."
 
 if [[ ! -d "${ANDROID_AVD_HOME}/${AVD_NAME}.avd" ]]; then
     log "Creating persistent Android 14 virtual device '${AVD_NAME}'..."
