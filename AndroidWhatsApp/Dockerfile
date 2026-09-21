@@ -68,6 +68,6 @@ RUN mkdir -p /opt/android-whatsapp \
 COPY entrypoint.sh /opt/android-whatsapp/entrypoint.sh
 RUN chmod 0755 /opt/android-whatsapp/entrypoint.sh
 
-EXPOSE 6080 5555
+EXPOSE 6080 5900 5555
 
 ENTRYPOINT ["/opt/android-whatsapp/entrypoint.sh"]
