@@ -1,5 +1,5 @@
 name: "AndroidWhatsApp"
-version: "0.1.0"
+version: "0.1.1"
 slug: "android_whatsapp"
 description: "Runs an Android 14 environment for the WhatsApp Android client."
 arch:
