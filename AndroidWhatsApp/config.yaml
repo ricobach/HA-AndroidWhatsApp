@@ -1,21 +1,26 @@
 name: "AndroidWhatsApp"
-version: "0.1.4"
+version: "0.2.0"
 slug: "android_whatsapp"
-description: "Runs an Android 14 environment for the WhatsApp Android client."
+description: "Runs a persistent Android 14 emulator for the WhatsApp Android client."
 arch:
   - amd64
-  - aarch64
 startup: application
 boot: auto
 init: false
 full_access: true
 apparmor: false
+ingress: true
+ingress_port: 6080
+panel_icon: "mdi:whatsapp"
+webui: "http://[HOST]:[PORT:6080]/vnc.html?autoconnect=true&resize=scale"
 map:
   - type: addon_config
     read_only: true
 ports:
+  6080/tcp: 6080
   5555/tcp: 5555
 ports_description:
-  5555/tcp: "Android Debug Bridge (ADB)"
+  6080/tcp: "Android browser display (noVNC)"
+  5555/tcp: "Android Emulator ADB transport"
 options: {}
 schema: {}
