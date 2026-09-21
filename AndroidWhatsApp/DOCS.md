@@ -1,16 +1,39 @@
-# AndroidWhatsApp 0.2.2
+# AndroidWhatsApp 0.2.3
 
-AndroidWhatsApp runs an Android 14 Google Emulator with persistent storage and browser control.
+This release changes the browser/VNC display from the Android Emulator desktop window to a clean **scrcpy mirror of the Android screen**.
 
-## Home Assistant Ingress
+The emulator itself runs headlessly. After Android boots, scrcpy opens fullscreen on the virtual X display and noVNC exposes that display through Home Assistant Ingress.
 
-Use **Open Web UI** or the **AndroidWhatsApp** Home Assistant sidebar entry.
+## First start
 
-The noVNC frontend is served through Home Assistant Ingress on the app's internal port 6080. AndroidWhatsApp automatically derives the current Ingress session prefix and uses it for the noVNC `websockify` WebSocket connection.
+If KVM is unavailable, software emulation is used and the first boot can be slow. Version 0.2.3 allows up to 15 minutes in software-emulation mode.
 
-This means you do not need to know or bookmark the generated `/api/hassio_ingress/.../` URL.
+Use:
 
-For troubleshooting only, direct noVNC remains available on port 6080 and raw VNC on port 5900.
+```bash
+ha apps logs 98905704_android_whatsapp --follow
+```
+
+Wait for:
+
+```
+[AndroidWhatsApp] Android boot completed.
+[AndroidWhatsApp] Starting scrcpy Android display...
+[AndroidWhatsApp] Android is running and mirrored through scrcpy.
+```
+
+## Access
+
+Preferred:
+
+**AndroidWhatsApp -> Open Web UI**
+
+Troubleshooting:
+
+```
+noVNC: http://HOME_ASSISTANT_IP:6080/
+VNC:   HOME_ASSISTANT_IP:5900
+```
 
 ## Install WhatsApp
 
@@ -20,12 +43,4 @@ Put a legitimate single-file `WhatsApp.apk` in:
 /addon_configs/98905704_android_whatsapp/WhatsApp.apk
 ```
 
-Restart AndroidWhatsApp. The startup script installs it after Android completes boot.
-
-## Logs
-
-```bash
-ha apps logs 98905704_android_whatsapp --follow
-```
-
-Hardware acceleration is strongly preferred. If KVM is unavailable, AndroidWhatsApp automatically uses software emulation.
+Restart the app. It will install/update the APK after Android finishes booting.
