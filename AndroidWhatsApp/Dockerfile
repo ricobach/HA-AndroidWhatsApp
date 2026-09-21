@@ -58,13 +58,8 @@ RUN yes | sdkmanager --licenses >/dev/null \
        "system-images;android-34;google_apis;x86_64" \
     && rm -rf /root/.android/cache /tmp/*
 
-RUN mkdir -p /opt/android-whatsapp \
-    && printf '%s\n' \
-       '<!doctype html>' \
-       '<html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=vnc.html?autoconnect=true&resize=scale"></head>' \
-       '<body><a href="vnc.html?autoconnect=true&resize=scale">Open AndroidWhatsApp</a></body></html>' \
-       > /usr/share/novnc/index.html
-
+RUN mkdir -p /opt/android-whatsapp
+COPY ingress-index.html /usr/share/novnc/index.html
 COPY entrypoint.sh /opt/android-whatsapp/entrypoint.sh
 RUN chmod 0755 /opt/android-whatsapp/entrypoint.sh
 
