@@ -1,26 +1,73 @@
-FROM alpine:3.20 AS debug-tools
-RUN apk add --no-cache busybox-static
-
-FROM redroid/redroid:14.0.0-latest
+FROM debian:bookworm-slim
 
 ARG BUILD_VERSION
 ARG BUILD_ARCH
 
+ENV DEBIAN_FRONTEND=noninteractive \
+    ANDROID_HOME=/opt/android-sdk \
+    ANDROID_SDK_ROOT=/opt/android-sdk \
+    PATH=/opt/android-sdk/cmdline-tools/latest/bin:/opt/android-sdk/platform-tools:/opt/android-sdk/emulator:$PATH
+
 LABEL \
-  io.hass.version="${BUILD_VERSION}" \
-  io.hass.type="app" \
-  io.hass.arch="${BUILD_ARCH}"
+    io.hass.version="${BUILD_VERSION}" \
+    io.hass.type="app" \
+    io.hass.arch="${BUILD_ARCH}"
 
-# ReDroid's Android userspace does not provide a normal Linux shell/loader
-# before /init starts. Alpine's busybox-static package installs the truly
-# static binary as /bin/busybox.static; using /bin/busybox here would depend
-# on Alpine's musl loader and fail in the Android rootfs with ENOENT.
-COPY --from=debug-tools /bin/busybox.static /debug/busybox
-COPY rootfs/system/bin/redroid-debug-start.sh /debug/start.sh
+# Keep the Linux userspace small. The Android system image is by far the
+# largest part of the final image.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openjdk-17-jre-headless \
+    ca-certificates \
+    curl \
+    unzip \
+    procps \
+    libgl1 \
+    libpulse0 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxi6 \
+    libxtst6 \
+    libnss3 \
+    libxss1 \
+    libasound2 \
+    libxrandr2 \
+    libxdamage1 \
+    libxfixes3 \
+    fonts-dejavu-core \
+    xvfb \
+    x11vnc \
+    fluxbox \
+    novnc \
+    websockify \
+    && rm -rf /var/lib/apt/lists/*
 
-# Files consumed after Android has mounted its normal root filesystem.
-COPY rootfs/vendor/etc/init/whatsapp.rc /vendor/etc/init/whatsapp.rc
-COPY rootfs/system/bin/install-whatsapp.sh /system/bin/install-whatsapp.sh
+# Android command-line tools.
+RUN mkdir -p "${ANDROID_HOME}/cmdline-tools" \
+    && curl -fsSL -o /tmp/cmdline-tools.zip \
+       https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip \
+    && unzip -q /tmp/cmdline-tools.zip -d "${ANDROID_HOME}/cmdline-tools" \
+    && mv "${ANDROID_HOME}/cmdline-tools/cmdline-tools" "${ANDROID_HOME}/cmdline-tools/latest" \
+    && rm -f /tmp/cmdline-tools.zip
 
-# Run diagnostics with a static shell, then exec ReDroid's native /init.
-ENTRYPOINT ["/debug/busybox", "sh", "/debug/start.sh"]
+# Android 14 Google APIs x86_64 image. This runs its own Android kernel, so it
+# does not require Binder support from the Home Assistant OS host kernel.
+RUN yes | sdkmanager --licenses >/dev/null \
+    && sdkmanager --install \
+       "platform-tools" \
+       "emulator" \
+       "system-images;android-34;google_apis;x86_64" \
+    && rm -rf /root/.android/cache /tmp/*
+
+RUN mkdir -p /opt/android-whatsapp \
+    && printf '%s\n' \
+       '<!doctype html>' \
+       '<html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=vnc.html?autoconnect=true&resize=scale"></head>' \
+       '<body><a href="vnc.html?autoconnect=true&resize=scale">Open AndroidWhatsApp</a></body></html>' \
+       > /usr/share/novnc/index.html
+
+COPY entrypoint.sh /opt/android-whatsapp/entrypoint.sh
+RUN chmod 0755 /opt/android-whatsapp/entrypoint.sh
+
+EXPOSE 6080 5555
+
+ENTRYPOINT ["/opt/android-whatsapp/entrypoint.sh"]
