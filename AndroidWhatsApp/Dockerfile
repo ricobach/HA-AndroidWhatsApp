@@ -11,9 +11,11 @@ LABEL \
   io.hass.type="app" \
   io.hass.arch="${BUILD_ARCH}"
 
-# ReDroid's /system is not available yet when Docker launches ENTRYPOINT.
-# Bring our own static shell so diagnostics can run before Android /init.
-COPY --from=debug-tools /bin/busybox /debug/busybox
+# ReDroid's Android userspace does not provide a normal Linux shell/loader
+# before /init starts. Alpine's busybox-static package installs the truly
+# static binary as /bin/busybox.static; using /bin/busybox here would depend
+# on Alpine's musl loader and fail in the Android rootfs with ENOENT.
+COPY --from=debug-tools /bin/busybox.static /debug/busybox
 COPY rootfs/system/bin/redroid-debug-start.sh /debug/start.sh
 
 # Files consumed after Android has mounted its normal root filesystem.
