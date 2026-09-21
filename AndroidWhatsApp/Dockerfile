@@ -1,3 +1,6 @@
+FROM alpine:3.20 AS debug-tools
+RUN apk add --no-cache busybox-static
+
 FROM redroid/redroid:14.0.0-latest
 
 ARG BUILD_VERSION
@@ -8,11 +11,14 @@ LABEL \
   io.hass.type="app" \
   io.hass.arch="${BUILD_ARCH}"
 
-# ReDroid is an Android root filesystem, not a normal Linux distro.
-# Do not use RUN here: many ReDroid images do not provide /bin/sh for Docker builds.
+# ReDroid's /system is not available yet when Docker launches ENTRYPOINT.
+# Bring our own static shell so diagnostics can run before Android /init.
+COPY --from=debug-tools /bin/busybox /debug/busybox
+COPY rootfs/system/bin/redroid-debug-start.sh /debug/start.sh
+
+# Files consumed after Android has mounted its normal root filesystem.
 COPY rootfs/vendor/etc/init/whatsapp.rc /vendor/etc/init/whatsapp.rc
 COPY rootfs/system/bin/install-whatsapp.sh /system/bin/install-whatsapp.sh
-COPY rootfs/system/bin/redroid-debug-start.sh /system/bin/redroid-debug-start.sh
 
-# Print host/kernel/Binder diagnostics before replacing PID 1 with Android init.
-ENTRYPOINT ["/system/bin/sh", "/system/bin/redroid-debug-start.sh"]
+# Run diagnostics with a static shell, then exec ReDroid's native /init.
+ENTRYPOINT ["/debug/busybox", "sh", "/debug/start.sh"]
