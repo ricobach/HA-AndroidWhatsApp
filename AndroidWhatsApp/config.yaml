@@ -1,5 +1,5 @@
 name: "AndroidWhatsApp"
-version: "0.2.0"
+version: "0.2.1"
 slug: "android_whatsapp"
 description: "Runs a persistent Android 14 emulator for the WhatsApp Android client."
 arch:
@@ -18,9 +18,11 @@ map:
     read_only: true
 ports:
   6080/tcp: 6080
+  5900/tcp: 5900
   5555/tcp: 5555
 ports_description:
   6080/tcp: "Android browser display (noVNC)"
+  5900/tcp: "Raw VNC display"
   5555/tcp: "Android Emulator ADB transport"
 options: {}
 schema: {}
