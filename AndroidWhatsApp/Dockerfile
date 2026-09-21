@@ -12,5 +12,7 @@ LABEL \
 # Do not use RUN here: many ReDroid images do not provide /bin/sh for Docker builds.
 COPY rootfs/vendor/etc/init/whatsapp.rc /vendor/etc/init/whatsapp.rc
 COPY rootfs/system/bin/install-whatsapp.sh /system/bin/install-whatsapp.sh
+COPY rootfs/system/bin/redroid-debug-start.sh /system/bin/redroid-debug-start.sh
 
-ENTRYPOINT ["/init", "qemu=1", "androidboot.hardware=redroid", "ro.setupwizard.mode=DISABLED", "androidboot.redroid_gpu_mode=guest", "androidboot.redroid_width=720", "androidboot.redroid_height=1280", "androidboot.redroid_dpi=320"]
+# Print host/kernel/Binder diagnostics before replacing PID 1 with Android init.
+ENTRYPOINT ["/system/bin/sh", "/system/bin/redroid-debug-start.sh"]
