@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>AndroidWhatsApp</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<script>
+(() => {
+  /*
+   * noVNC's default websocket path is /websockify. That works for direct
+   * access, but Home Assistant Ingress places the app below a dynamic path
+   * such as /api/hassio_ingress/<session>/.
+   *
+   * Build the websocket path from the URL currently visible in the browser,
+   * so both direct access and Ingress use the same page.
+   */
+  const pathname = window.location.pathname;
+  const base = pathname.endsWith("/")
+    ? pathname
+    : pathname.substring(0, pathname.lastIndexOf("/") + 1);
+
+  const websocketPath = (base + "websockify").replace(/^\//, "");
+  const params = new URLSearchParams({
+    autoconnect: "true",
+    resize: "scale",
+    path: websocketPath
+  });
+
+  window.location.replace("vnc.html?" + params.toString());
+})();
+</script>
+<noscript>
+  JavaScript is required to open the AndroidWhatsApp noVNC interface.
+</noscript>
+</body>
+</html>
