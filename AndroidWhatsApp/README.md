@@ -1,61 +1,99 @@
 # AndroidWhatsApp
 
-Prototype Home Assistant app/add-on that runs an Android 14 environment using ReDroid and automatically installs the official WhatsApp Android APK supplied by the user.
+AndroidWhatsApp is a Home Assistant app/add-on that runs a persistent Android 14 virtual phone for the WhatsApp Android client.
 
-## What this version does
+Version 0.2.0 replaces the previous ReDroid approach with the official Google Android Emulator. Android now runs with its own guest kernel, so the Home Assistant OS host does **not** need Android Binder/BinderFS kernel support.
 
-- Uses `redroid/redroid:14.0.0-latest` directly as its Docker base image.
-- Keeps ReDroid's native Android `/init` entrypoint.
-- Uses Home Assistant's persistent `/data` mount as Android's persistent data partition.
-- Mounts the add-on-specific config folder at `/config`.
-- Installs or updates `/config/WhatsApp.apk` after Android reports `sys.boot_completed=1`.
-- Exposes ADB on TCP port 5555.
-- Uses software rendering (`androidboot.redroid_gpu_mode=guest`) for maximum compatibility.
+## Architecture
 
-## Important Home Assistant OS limitation
-
-ReDroid needs Linux Binder support and normally runs with Docker `--privileged`. This app therefore requests `full_access: true` and disables AppArmor. It will only work if the Home Assistant OS/kernel on the target machine exposes the Binder functionality ReDroid needs. This is the main item that must be tested on the target Home Assistant host.
-
-If Android exits immediately, inspect the app log and host kernel log for Binder errors.
-
-## Installation as a local app
-
-1. Copy the `AndroidWhatsApp` directory into the local Home Assistant apps/add-ons directory.
-2. Reload the app store and install **AndroidWhatsApp**.
-3. Disable protection mode for this app if Supervisor requires it for `full_access`.
-4. Start it once so Home Assistant creates the app-specific config directory.
-5. Put a legitimate copy of the WhatsApp Android APK in the add-on config directory and name it exactly:
-
-   `WhatsApp.apk`
-
-   Inside the Android container it is mounted as `/config/WhatsApp.apk`.
-6. Restart the app.
-
-## Connecting to Android
-
-From another computer with Android platform tools installed:
-
-```bash
-adb connect HOME_ASSISTANT_IP:5555
-adb devices
+```
+Home Assistant OS
+  -> AndroidWhatsApp container (Debian slim)
+      -> Google Android Emulator
+          -> Android 14 Google APIs x86_64
+              -> WhatsApp
+      -> Xvfb + x11vnc + noVNC
 ```
 
-Then use scrcpy:
+The app uses `/dev/kvm` automatically when Home Assistant OS exposes it. If KVM is not available it falls back to software CPU emulation, which will be considerably slower.
 
-```bash
-scrcpy -s HOME_ASSISTANT_IP:5555
+## Persistent state
+
+The emulator home and AVD are stored under Home Assistant's persistent app data directory:
+
+```
+/data/.android
 ```
 
-The Android state, WhatsApp login and app data live under the persistent `/data` volume and should survive app restarts/upgrades unless that data is deleted.
+That means the Android installation, WhatsApp registration and WhatsApp application data survive normal app restarts and upgrades.
 
-## WhatsApp APK format
+## WhatsApp APK
 
-This prototype expects a single installable APK. Some distribution sources provide split APK/App Bundle packages instead of one APK; those require a different installer flow (`install-multiple`) and are not handled by v0.1.0.
+The app intentionally does not distribute WhatsApp.
+
+Place a legitimate single-file Android APK at:
+
+```
+/addon_configs/98905704_android_whatsapp/WhatsApp.apk
+```
+
+Inside the app this appears as:
+
+```
+/config/WhatsApp.apk
+```
+
+At boot AndroidWhatsApp hashes the APK and installs/updates it only when necessary.
+
+## Browser access
+
+noVNC runs on port 6080 and is configured as the Home Assistant app Web UI/Ingress endpoint. Open **AndroidWhatsApp -> Open Web UI** to control the virtual phone.
+
+Direct fallback URL:
+
+```
+http://HOME_ASSISTANT_IP:6080/vnc.html?autoconnect=true&resize=scale
+```
+
+## KVM
+
+Watch the app log during startup. A fast configuration reports:
+
+```
+[AndroidWhatsApp] KVM is accessible; enabling hardware virtualization.
+```
+
+Without KVM it reports:
+
+```
+[AndroidWhatsApp] KVM is unavailable or inaccessible; using software emulation.
+```
+
+Software emulation can take several minutes to boot.
+
+## Resources
+
+The default virtual phone uses:
+
+- Android 14 / API 34
+- Google APIs x86_64 image
+- 720 x 1280 display
+- 320 dpi
+- 2 GB Android RAM
+- up to 8 GB Android userdata
+
+The Docker image itself is several GB because the Android Emulator and Android system image dominate the size; using Debian slim mainly reduces the surrounding Linux userspace.
 
 ## Security
 
-ADB port 5555 provides powerful control of the Android instance. Do not expose it directly to the Internet. Restrict it to a trusted LAN/VPN/firewall segment.
+Port 6080 currently has no VNC password and should only be exposed to a trusted LAN/VPN. ADB access is also powerful and must not be forwarded to the public Internet.
 
-## Next step
+## Troubleshooting
 
-The intended v0.2 architecture is to add a browser-based scrcpy frontend so the Android screen can be opened from Home Assistant rather than requiring desktop scrcpy.
+Use:
+
+```bash
+ha apps logs 98905704_android_whatsapp --follow
+```
+
+The startup script logs KVM detection, AVD creation, ADB availability, Android boot completion, APK installation and emulator failures.
